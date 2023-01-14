@@ -29,7 +29,7 @@ int main()
 
     printf("mbed-can-motor-driver-for-spirit v0.1.0\n");
     printf("spirit v0.1.0\n");
-    printf("CAN ID: %3X (DIW SW: %1X)\n", can_id, dip_sw_value);
+    printf("CAN ID: %3lX (DIW SW: %1lX)\n", can_id, dip_sw_value);
 
     spirit::mbed::DigitalOut sr(PB_0);
     spirit::mbed::PwmOut     pwmh(PA_6);

@@ -1,0 +1,7 @@
+{
+    "target_overrides": {
+        "NUCLEO_F303K8": {
+            "platform.stdio-baud-rate": 115200
+        }
+    }
+}

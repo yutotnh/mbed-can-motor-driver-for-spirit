@@ -1,3 +1,4 @@
+# for Mbed CLI 1
 .build
 .mbed
 projectfiles
@@ -5,3 +6,6 @@ projectfiles
 mbed-os
 BUILD
 
+# for Mbed CLI 2
+.mbedbuild
+cmake_build/

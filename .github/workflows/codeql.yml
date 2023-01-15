@@ -75,8 +75,11 @@ jobs:
         #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
         run: |
           python -m pip install mbed-tools
+          python -m pip install ninja
           mbed-tools deploy
-          mbed-tools compile -t GCC_ARM -m NUCLEO_F303K8
+          mbed-tools configure -t GCC_ARM -m NUCLEO_F303K8 --profile develop
+          cmake -S . -B cmake_build/NUCLEO_F303K8/develop/GCC_ARM -GNinja
+          cmake --build cmake_build/NUCLEO_F303K8/develop/GCC_ARM
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2

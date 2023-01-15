@@ -65,6 +65,16 @@ jobs:
           # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
 
+      - name: Install applications for mbed-tools
+        run: |
+          # gcc-arm-none-eabi
+          wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2
+          tar xf gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2
+          # mbed-tools
+          python -m pip install mbed-tools
+          # ninja
+          python -m pip install ninja
+
       # Autobuild attempts to build any compiled languages  (C/C++, C#, Go, or Java).
       # If this step fails, then you should remove it and run the build manually (see below)
       - name: Build
@@ -74,8 +84,7 @@ jobs:
         #   If the Autobuild fails above, remove it and uncomment the following three lines.
         #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
         run: |
-          python -m pip install mbed-tools
-          python -m pip install ninja
+          export PATH="${PATH}:gcc-arm-none-eabi-9-2019-q4-major/bin"
           mbed-tools deploy
           mbed-tools configure -t GCC_ARM -m NUCLEO_F303K8 --profile develop
           cmake -S . -B cmake_build/NUCLEO_F303K8/develop/GCC_ARM -GNinja

@@ -88,9 +88,7 @@ jobs:
         #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
         run: |
           mbed-tools deploy
-          mbed-tools configure -t GCC_ARM -m NUCLEO_F303K8 --profile develop
-          cmake -S . -B cmake_build/NUCLEO_F303K8/develop/GCC_ARM -GNinja
-          cmake --build cmake_build/NUCLEO_F303K8/develop/GCC_ARM
+          mbed-tools build -t GCC_ARM -m NUCLEO_F303K8 --profile develop
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2

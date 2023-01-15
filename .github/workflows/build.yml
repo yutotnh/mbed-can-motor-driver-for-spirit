@@ -76,6 +76,6 @@ jobs:
         run: |
           set -e
           mbed-tools deploy
-          mbed-tools configure -m ${{ matrix.target }} --profile ${{ matrix.profile }}
+          mbed-tools configure -t GCC_ARM -m ${{ matrix.target }} --profile ${{ matrix.profile }}
           cmake -S . -B cmake_build/${{ matrix.target }}/${{ matrix.profile }}/GCC_ARM -GNinja
           cmake --build cmake_build/${{ matrix.target }}/${{ matrix.profile }}/GCC_ARM

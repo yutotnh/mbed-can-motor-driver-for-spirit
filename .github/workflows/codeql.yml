@@ -70,7 +70,6 @@ jobs:
           # gcc-arm-none-eabi
           wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2019q4/gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2
           tar xf gcc-arm-none-eabi-9-2019-q4-major-x86_64-linux.tar.bz2
-          sudo install gcc-arm-none-eabi-9-2019-q4-major/bin/* /usr/bin
           # python3
           sudo apt-get install python3-dev
           # mbed-tools
@@ -87,6 +86,7 @@ jobs:
         #   If the Autobuild fails above, remove it and uncomment the following three lines.
         #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
         run: |
+          export PATH=export PATH=gcc-arm-none-eabi-9-2019-q4-major/bin:${PATH}
           mbed-tools deploy
           mbed-tools compile -t GCC_ARM -m NUCLEO_F303K8 --profile develop
 

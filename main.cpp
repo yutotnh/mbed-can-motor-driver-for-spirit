@@ -25,7 +25,8 @@ int main()
     const uint32_t can_id       = spirit::can::get_motor_id(1, 0, dip_sw_value);
 
     CAN can(PA_11, PA_12);
-    can.filter(can_id, 0x7FF);
+    // CANのfilterを使う場合、以下のコメントを外す
+    // const uint32_t filter_handle = can.filter(can_id, 0x7FF);
 
     printf("mbed-can-motor-driver-for-spirit v0.1.0\n");
     printf("spirit v0.1.0\n");
@@ -53,14 +54,17 @@ int main()
 
     while (true) {
         // バッファに溜まっているデータを全て処理したいので、 while で回す
+
+        // CANのfilterを使う場合、while文を以下のように書き換える
+        // while (can.read(msg, filter_handle)) {
         while (can.read(msg)) {
             if (msg.id == can_id) {
                 ttl = defalt_ttl;
 
-                constexpr std::size_t max_payload_size          = 8;
-                uint8_t               payload[max_payload_size] = {};
+                constexpr std::size_t max_payload_size = 64;
+                uint8_t               payload[8]       = {};
                 std::size_t           payload_size;
-                fake_udp.decode(msg.data, msg.len, max_payload_size, payload, payload_size);
+                fake_udp.decode(msg.data, msg.len * 8, max_payload_size, payload, payload_size);
 
                 spirit::Motor motor;
                 pwm_data.decode(payload, payload_size, motor);

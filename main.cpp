@@ -44,13 +44,12 @@ int main()
     spirit::mbed::DigitalOut led1(PA_9);
 
     spirit::MdLed mdled(led0, led1);
-    mdled.mode(spirit::MdLed::BlinkMode::Alternate);
 
     CANMessage               msg;
     spirit::FakeUdpConverter fake_udp;
     spirit::PwmDataConverter pwm_data;
 
-    uint32_t ttl = defalt_ttl;
+    int32_t ttl = -1;
 
     while (true) {
         // バッファに溜まっているデータを全て処理したいので、 while で回す
@@ -71,14 +70,21 @@ int main()
 
                 a3921.duty_cycle(motor.get_duty_cycle());
                 a3921.state(motor.get_state());
+
+                mdled.mode(spirit::MdLed::BlinkMode::Normal);
+                mdled.state(motor.get_state());
             }
         }
 
-        // しばらく通信が来なかったときに安全のため、モーターを停止させる
         if (ttl > 0) {
             ttl--;
-        } else {
+        } else if (ttl == 0) {
+            // 一定時間データが来ないとき、安全のためモーターを停止させる
             a3921.state(spirit::Motor::State::Brake);
+            mdled.mode(spirit::MdLed::BlinkMode::Concurrent);
+        } else {
+            // 一度も通信が来ていない場合は、ttlが負の値になる
+            mdled.mode(spirit::MdLed::BlinkMode::Alternate);
         }
 
         ThisThread::sleep_for(loop_rate);

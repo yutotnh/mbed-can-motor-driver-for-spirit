@@ -8,12 +8,14 @@ on:
       - "**/CMakeLists.txt"
       - "**.h"
       - "**.cpp"
+      - "*.lib"
       - "**/build.yml"
   pull_request:
     paths:
       - "**/CMakeLists.txt"
       - "**.h"
       - "**.cpp"
+      - "*.lib"
       - "**/build.yml"
   workflow_dispatch:
 

@@ -9,3 +9,4 @@ BUILD
 # for Mbed CLI 2
 .mbedbuild
 cmake_build/
+spirit

@@ -87,6 +87,7 @@ int main()
             mdled.mode(spirit::MdLed::BlinkMode::Alternate);
         }
 
+        mdled.coordinate();
         ThisThread::sleep_for(loop_rate);
     }
 }

@@ -21,6 +21,8 @@ int main()
 
     BusIn dip_sw(PB_3, PB_4, PB_5, PB_6);  // 下位ビット ~ 上位ビット
 
+    dip_sw.mode(PullDown);
+
     const uint32_t dip_sw_value = dip_sw.read();
     const uint32_t can_id       = spirit::can::get_motor_id(1, 0, dip_sw_value);
 
@@ -70,6 +72,7 @@ int main()
 
                 a3921.duty_cycle(motor.get_duty_cycle());
                 a3921.state(motor.get_state());
+                a3921.run();
 
                 mdled.mode(spirit::MdLed::BlinkMode::Normal);
                 mdled.state(motor.get_state());
@@ -81,6 +84,7 @@ int main()
         } else if (ttl == 0) {
             // 一定時間データが来ないとき、安全のためモーターを停止させる
             a3921.state(spirit::Motor::State::Brake);
+            a3921.run();
             mdled.mode(spirit::MdLed::BlinkMode::Concurrent);
         } else {
             // 一度も通信が来ていない場合は、ttlが負の値になる

@@ -3,10 +3,11 @@
 
 #include "mbed.h"
 #include "spirit/include/A3921.h"
+#include "spirit/include/Error.h"
 #include "spirit/include/FakeUdpConverter.h"
 #include "spirit/include/Id.h"
 #include "spirit/include/MdLed.h"
-#include "spirit/include/PwmDataConverter.h"
+#include "spirit/include/MotorDataConverter.h"
 #include "spirit/platform/mbed/include/DigitalOut.h"
 #include "spirit/platform/mbed/include/PwmOut.h"
 
@@ -47,9 +48,9 @@ int main()
 
     spirit::MdLed mdled(led0, led1);
 
-    CANMessage               msg;
-    spirit::FakeUdpConverter fake_udp;
-    spirit::PwmDataConverter pwm_data;
+    CANMessage                 msg;
+    spirit::FakeUdpConverter   fake_udp;
+    spirit::MotorDataConverter motor_data;
 
     int32_t ttl = -1;
 
@@ -67,15 +68,42 @@ int main()
                 std::size_t           payload_size;
                 fake_udp.decode(msg.data, msg.len * 8, max_payload_size, payload, payload_size);
 
-                spirit::Motor motor;
-                pwm_data.decode(payload, payload_size, motor);
+                spirit::Motor  motor;
+                spirit::Error& error = spirit::Error::get_instance();
+                if (motor_data.decode(payload, payload_size, motor)) {
+                    switch (motor.get_control_system()) {
+                        case spirit::Motor::ControlSystem::PWM:
+                            a3921.duty_cycle(motor.get_duty_cycle());
+                            a3921.state(motor.get_state());
+                            a3921.run();
 
-                a3921.duty_cycle(motor.get_duty_cycle());
-                a3921.state(motor.get_state());
-                a3921.run();
+                            mdled.mode(spirit::MdLed::BlinkMode::Normal);
+                            mdled.state(motor.get_state());
+                            break;
+                        case spirit::Motor::ControlSystem::Speed:
+                            spirit::Motor::State state;
+                            float                speed;
+                            float                Ki, Kp, Kd;
+                            state = motor.get_state();
+                            speed = motor.get_speed();
+                            motor.get_pid_gain_factor(Kp, Ki, Kd);  // Kd はデータが来ない
 
-                mdled.mode(spirit::MdLed::BlinkMode::Normal);
-                mdled.state(motor.get_state());
+                            /// @todo PID制御でデューティー比と回転方向を決定する
+
+                            /// @todo デューティー比と回転方向をA3921に反映させ、動作させる
+
+                            break;
+                        default:
+                            char message_format[] = "Unknown motor control system (%d)";
+                            char message[sizeof(message_format) + spirit::Error::max_uint32_t_length];
+                            snprintf(message, sizeof(message), message_format,
+                                     static_cast<uint32_t>(motor.get_control_system()));
+                            error.error(spirit::Error::Type::UnknownValue, 0, message, __FILE__, __func__, __LINE__);
+                            break;
+                    }
+                } else {
+                    error.error(spirit::Error::Type::UnknownValue, 0, "Failed to decode", __FILE__, __func__, __LINE__);
+                }
             }
         }
 

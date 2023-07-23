@@ -2,14 +2,7 @@
 #include <cstdint>
 
 #include "mbed.h"
-#include "spirit/include/A3921.h"
-#include "spirit/include/Error.h"
-#include "spirit/include/FakeUdpConverter.h"
-#include "spirit/include/Id.h"
-#include "spirit/include/MdLed.h"
-#include "spirit/include/MotorDataConverter.h"
-#include "spirit/platform/mbed/include/DigitalOut.h"
-#include "spirit/platform/mbed/include/PwmOut.h"
+#include "spirit.h"
 
 static constexpr uint32_t pc_baud    = 115'200;
 static constexpr auto     loop_rate  = 1ms;
@@ -52,7 +45,19 @@ int main()
     spirit::FakeUdpConverter   fake_udp;
     spirit::MotorDataConverter motor_data;
 
+    spirit::mbed::InterruptIn a_phase(PA_0);
+    spirit::mbed::InterruptIn b_phase(PA_1);
+
+    spirit::SpeedController speed_controller(a_phase, b_phase);
+
+    //Timer timer;
+
     int32_t ttl = -1;
+
+    speed_controller.limit(0.99f, 0.00f);
+    speed_controller.pid_gain(0.30f, 0.80f, 0.20f);
+
+    //timer.start();
 
     while (true) {
         // バッファに溜まっているデータを全て処理したいので、 while で回す
@@ -94,7 +99,15 @@ int main()
                     float Ki, Kp, Kd;
                     motor.get_pid_gain_factor(Kp, Ki, Kd);  // Kd はデータが来ない
 
-                    /// @todo PID制御でデューティー比と回転方向を決定する
+                    if (speed_controller.pid_gain(Kp, Ki, Kd)) {
+                        speed_controller.reset();
+                        duty_cycle = 0.00f;
+                        //timer.reset();
+                    } else {
+                        //float dt   = static_cast<float>{timer.elapsed_time()}.count();
+                        duty_cycle = speed_controller.calculation(speed, 0.001f);
+                        //timer.reset();
+                    }
 
                     break;
                 default:

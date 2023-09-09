@@ -77,7 +77,7 @@ int main()
                 if (motor_data.decode(payload, payload_size, motor)) {
                 } else {
                     spirit::Error& error = spirit::Error::get_instance();
-                    error.error(spirit::Error::Type::UnknownValue, 0, "Failed to decode", __FILE__, __func__, __LINE__);
+                    error.error(spirit::Error::Type::UnknownValue, 0, __FILE__, __func__, __LINE__, "Failed to decode");
                 }
             }
         }
@@ -102,21 +102,15 @@ int main()
                     if (speed_controller.pid_gain(Kp, Ki, Kd)) {
                         speed_controller.reset();
                         duty_cycle = 0.00f;
-                        //timer.reset();
                     } else {
-                        //float dt   = static_cast<float>{timer.elapsed_time()}.count();
                         duty_cycle = speed_controller.calculation(speed, 0.001f);
-                        //timer.reset();
                     }
 
                     break;
                 default:
-                    spirit::Error& error            = spirit::Error::get_instance();
-                    char           message_format[] = "Unknown motor control system (%d)";
-                    char           message[sizeof(message_format) + spirit::Error::max_uint32_t_length];
-                    snprintf(message, sizeof(message), message_format,
-                             static_cast<uint32_t>(motor.get_control_system()));
-                    error.error(spirit::Error::Type::UnknownValue, 0, message, __FILE__, __func__, __LINE__);
+                    spirit::Error::get_instance().error(spirit::Error::Type::UnknownValue, 0, __FILE__, __func__,
+                                                        __LINE__, "Unknown motor control system (%d)",
+                                                        static_cast<uint32_t>(motor.get_control_system()));
                     break;
             }
 

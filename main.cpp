@@ -2,13 +2,7 @@
 #include <cstdint>
 
 #include "mbed.h"
-#include "spirit/include/A3921.h"
-#include "spirit/include/FakeUdpConverter.h"
-#include "spirit/include/Id.h"
-#include "spirit/include/MdLed.h"
-#include "spirit/include/PwmDataConverter.h"
-#include "spirit/platform/mbed/include/DigitalOut.h"
-#include "spirit/platform/mbed/include/PwmOut.h"
+#include "spirit.h"
 
 static constexpr uint32_t pc_baud    = 115'200;
 static constexpr auto     loop_rate  = 1ms;
@@ -47,17 +41,30 @@ int main()
 
     spirit::MdLed mdled(led0, led1);
 
-    CANMessage               msg;
-    spirit::FakeUdpConverter fake_udp;
-    spirit::PwmDataConverter pwm_data;
+    CANMessage                 msg;
+    spirit::FakeUdpConverter   fake_udp;
+    spirit::MotorDataConverter motor_data;
+
+    spirit::mbed::InterruptIn a_phase(PA_0);
+    spirit::mbed::InterruptIn b_phase(PA_1);
+
+    spirit::SpeedController speed_controller(a_phase, b_phase);
+
+    //Timer timer;
 
     int32_t ttl = -1;
+
+    speed_controller.limit(0.99f, 0.00f);
+    speed_controller.pid_gain(0.30f, 0.80f, 0.20f);
+
+    //timer.start();
 
     while (true) {
         // バッファに溜まっているデータを全て処理したいので、 while で回す
 
         // CANのfilterを使う場合、while文を以下のように書き換える
         // while (can.read(msg, filter_handle)) {
+        spirit::Motor motor;
         while (can.read(msg)) {
             if (msg.id == can_id) {
                 ttl = defalt_ttl;
@@ -67,20 +74,54 @@ int main()
                 std::size_t           payload_size;
                 fake_udp.decode(msg.data, msg.len * 8, max_payload_size, payload, payload_size);
 
-                spirit::Motor motor;
-                pwm_data.decode(payload, payload_size, motor);
-
-                a3921.duty_cycle(motor.get_duty_cycle());
-                a3921.state(motor.get_state());
-                a3921.run();
-
-                mdled.mode(spirit::MdLed::BlinkMode::Normal);
-                mdled.state(motor.get_state());
+                if (motor_data.decode(payload, payload_size, motor)) {
+                } else {
+                    spirit::Error& error = spirit::Error::get_instance();
+                    error.error(spirit::Error::Type::UnknownValue, 0, __FILE__, __func__, __LINE__, "Failed to decode");
+                }
             }
         }
 
         if (ttl > 0) {
             ttl--;
+            float                duty_cycle = 0.0f;
+            spirit::Motor::State state      = spirit::Motor::State::Brake;
+            switch (motor.get_control_system()) {
+                case spirit::Motor::ControlSystem::PWM:
+                    duty_cycle = motor.get_duty_cycle();
+                    state      = motor.get_state();
+                    break;
+                case spirit::Motor::ControlSystem::Speed:
+                    float speed;
+                    speed = motor.get_speed();
+                    state = motor.get_state();
+
+                    float Ki, Kp, Kd;
+                    motor.get_pid_gain_factor(Kp, Ki, Kd);  // Kd はデータが来ない
+
+                    Kd = Ki / 4.0f;  // KdはKiの1/4にする(経験則)
+
+                    if (speed_controller.pid_gain(Kp, Ki, Kd)) {
+                        speed_controller.reset();
+                        duty_cycle = 0.00f;
+                    } else {
+                        duty_cycle = speed_controller.calculation(speed, 0.001f);
+                    }
+
+                    break;
+                default:
+                    spirit::Error::get_instance().error(spirit::Error::Type::UnknownValue, 0, __FILE__, __func__,
+                                                        __LINE__, "Unknown motor control system (%d)",
+                                                        static_cast<uint32_t>(motor.get_control_system()));
+                    break;
+            }
+
+            mdled.mode(spirit::MdLed::BlinkMode::Normal);
+            mdled.state(state);
+
+            a3921.duty_cycle(duty_cycle);
+            a3921.state(state);
+            a3921.run();
         } else if (ttl == 0) {
             // 一定時間データが来ないとき、安全のためモーターを停止させる
             a3921.state(spirit::Motor::State::Brake);

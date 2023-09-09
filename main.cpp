@@ -99,6 +99,8 @@ int main()
                     float Ki, Kp, Kd;
                     motor.get_pid_gain_factor(Kp, Ki, Kd);  // Kd はデータが来ない
 
+                    Kd = Ki / 4.0f;                         // KdはKiの1/4にする(経験則)
+
                     if (speed_controller.pid_gain(Kp, Ki, Kd)) {
                         speed_controller.reset();
                         duty_cycle = 0.00f;

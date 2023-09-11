@@ -8,6 +8,8 @@ static constexpr uint32_t pc_baud    = 115'200;
 static constexpr auto     loop_rate  = 1ms;
 static constexpr uint32_t defalt_ttl = 1000;  // 1s
 
+void debug_float(float val);
+
 // main() runs in its own thread in the OS
 int main()
 {
@@ -50,14 +52,12 @@ int main()
 
     spirit::SpeedController speed_controller(a_phase, b_phase);
 
-    //Timer timer;
+    spirit::Motor::State last_state = spirit::Motor::State::Brake;
 
     int32_t ttl = -1;
 
     speed_controller.limit(0.99f, 0.00f);
     speed_controller.pid_gain(0.30f, 0.80f, 0.20f);
-
-    //timer.start();
 
     while (true) {
         // バッファに溜まっているデータを全て処理したいので、 while で回す
@@ -96,17 +96,31 @@ int main()
                     speed = motor.get_speed();
                     state = motor.get_state();
 
-                    float Ki, Kp, Kd;
+                    float Kp, Ki, Kd;
                     motor.get_pid_gain_factor(Kp, Ki, Kd);  // Kd はデータが来ない
 
                     Kd = Ki / 4.0f;  // KdはKiの1/4にする(経験則)
 
-                    if (speed_controller.pid_gain(Kp, Ki, Kd)) {
+                    if (speed_controller.pid_gain(Kp, Ki, Kd) || last_state != state) {
                         speed_controller.reset();
                         duty_cycle = 0.00f;
                     } else {
                         duty_cycle = speed_controller.calculation(speed, 0.001f);
                     }
+
+                    debug("kp = ");
+                    debug_float(Kp);
+                    debug(", ki = ");
+                    debug_float(Ki);
+                    debug(", kd = ");
+                    debug_float(Kd);
+                    debug(", target_rps = ");
+                    debug_float(speed);
+                    debug(", rps = ");
+                    debug_float(speed_controller.rps());
+                    debug(", duty = ");
+                    debug_float(duty_cycle);
+                    debug("\r\n");
 
                     break;
                 default:
@@ -115,6 +129,8 @@ int main()
                                                         static_cast<uint32_t>(motor.get_control_system()));
                     break;
             }
+
+            last_state = state;
 
             mdled.mode(spirit::MdLed::BlinkMode::Normal);
             mdled.state(state);
@@ -135,4 +151,9 @@ int main()
         mdled.coordinate();
         ThisThread::sleep_for(loop_rate);
     }
+}
+
+void debug_float(float val)
+{
+    debug("%d.%d", (int)val, (int)((val - (int)val) * 1000));
 }

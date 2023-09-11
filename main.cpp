@@ -109,11 +109,11 @@ int main()
                     }
 
                     debug("kp = ");
-                    debug_float(kp);
+                    debug_float(Kp);
                     debug(", ki = ");
-                    debug_float(ki);
+                    debug_float(Ki);
                     debug(", kd = ");
-                    debug_float(kd);
+                    debug_float(Kd);
                     debug(", target_rps = ");
                     debug_float(speed);
                     debug(", rps = ");

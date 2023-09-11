@@ -131,7 +131,7 @@ int main()
             }
 
             last_state = state;
-            
+
             mdled.mode(spirit::MdLed::BlinkMode::Normal);
             mdled.state(state);
 
